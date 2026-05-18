@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>指标体系构建智能体 · 技术方案汇报</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: "Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif; color: #1f2937; background: #475569; }
+.deck { display: flex; flex-direction: column; align-items: center; padding: 24px 0; gap: 28px; }
+.slide {
+  width: 1280px; height: 720px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  padding: 48px 64px;
+  position: relative;
+  page-break-after: always;
+  overflow: hidden;
+}
+.slide-num {
+  position: absolute; right: 32px; bottom: 24px;
+  font-size: 12pt; color: #94a3b8;
+}
+.slide-title {
+  font-size: 30pt; font-weight: 700; color: #1e3a8a;
+  border-bottom: 4px solid #1e40af;
+  padding-bottom: 12px; margin-bottom: 28px;
+}
+.slide-subtitle { font-size: 14pt; color: #475569; margin-top: -16px; margin-bottom: 24px; }
+.cover {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #fff;
+}
+.cover h1 { font-size: 48pt; font-weight: 800; margin-bottom: 18px; text-align:center; }
+.cover h2 { font-size: 24pt; font-weight: 400; color: #dbeafe; margin-bottom: 36px; }
+.cover .meta { font-size: 14pt; color: #bfdbfe; }
+.cover .badge { display:inline-block; background:#fff; color:#1e3a8a; padding: 6px 18px; border-radius: 24px; font-size: 12pt; margin-top:36px; font-weight: 600; }
+ul { padding-left: 32px; }
+li { font-size: 16pt; margin: 10px 0; line-height: 1.6; }
+li b { color: #1e40af; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.card { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card h3 { font-size: 18pt; color: #1e3a8a; margin-bottom: 12px; }
+.card p, .card li { font-size: 13pt; line-height: 1.5; }
+.kpi { display: flex; gap: 24px; margin-top: 16px; }
+.kpi-item { flex: 1; text-align: center; background: #fff; border: 1px solid #cbd5e1; padding: 18px; border-radius: 8px; }
+.kpi-item .num { font-size: 32pt; font-weight: 800; color: #dc2626; }
+.kpi-item .lab { font-size: 12pt; color: #475569; margin-top: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 13pt; margin-top: 12px; background: #fff; }
+th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+th { background: #1e40af; color: #fff; }
+tr:nth-child(even) td { background: #f1f5f9; }
+.callout { background: #fef3c7; border-left: 5px solid #f59e0b; padding: 14px 18px; border-radius: 6px; margin-top: 16px; font-size: 14pt; }
+.tip { background: #dcfce7; border-left: 5px solid #16a34a; padding: 14px 18px; border-radius: 6px; margin-top: 16px; font-size: 14pt; }
+.warn { background: #fee2e2; border-left: 5px solid #dc2626; padding: 14px 18px; border-radius: 6px; margin-top: 16px; font-size: 14pt; }
+.center { text-align: center; }
+.svg-wrap { text-align: center; margin: 12px 0; }
+.print-tip {
+  position: fixed; top: 10px; right: 10px;
+  background: #fbbf24; color: #1f2937; padding: 8px 14px;
+  border-radius: 6px; font-size: 12pt; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  cursor: pointer; z-index: 100;
+}
+@media print {
+  body { background: #fff; }
+  .deck { padding: 0; gap: 0; }
+  .slide { box-shadow: none; border-radius: 0; margin: 0; page-break-after: always; }
+  .print-tip { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="print-tip" onclick="window.print()">📄 点此打印为 PDF（再导入 PPT）</div>
+<div class="deck">
+
+<!-- Slide 1: 封面 -->
+<div class="slide cover">
+  <h1>指标体系构建智能体</h1>
+  <h2>从 Dify 走向工程化 · 技术方案汇报</h2>
+  <p class="meta">v1.0 &nbsp;|&nbsp; 2026-05-14 &nbsp;|&nbsp; 架构设计组</p>
+  <span class="badge">机密 · 仅供内部交流</span>
+  <span class="slide-num">1 / 16</span>
+</div>
+
+<!-- Slide 2: 议程 -->
+<div class="slide">
+  <div class="slide-title">议程</div>
+  <div class="two-col">
+    <ul>
+      <li>1. 现状与痛点</li>
+      <li>2. 改造目标</li>
+      <li>3. 总体技术路线</li>
+      <li>4. 模型分流策略</li>
+      <li>5. 大 JSON 瓶颈破解</li>
+      <li>6. 总体技术架构</li>
+      <li>7. 端到端数据流</li>
+      <li>8. 指标推导 Agent</li>
+    </ul>
+    <ul>
+      <li>9. RAG 混合检索</li>
+      <li>10. PG 向量库评估</li>
+      <li>11. Java vs Python</li>
+      <li>12. 最低环境配置（三阶段）</li>
+      <li>13. 高性能/安全/可观测</li>
+      <li>14. 部署拓扑</li>
+      <li>15. 实施路线图</li>
+      <li>16. 风险与对策</li>
+    </ul>
+  </div>
+  <span class="slide-num">2 / 16</span>
+</div>
+
+<!-- Slide 3: 现状与痛点 -->
+<div class="slide">
+  <div class="slide-title">现状与痛点</div>
+  <div class="slide-subtitle">基于 Dify Workflow + Qwen3-235B-A22B 的当前实现</div>
+  <div class="two-col">
+    <div class="card">
+      <h3>📍 现状</h3>
+      <ul>
+        <li>部署在 <b>aigc.midea.com/dify2</b></li>
+        <li>主模型 <b>Qwen3-235B-A22B</b></li>
+        <li>Agent 策略 <b>ReAct</b></li>
+        <li>工具：博查 Web 搜索 + 领域 RAG</li>
+        <li>已发布 14 天</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>⚠️ 痛点</h3>
+      <ul>
+        <li>拖拽实现，<b>工程化薄弱</b></li>
+        <li>Python 代码节点散落，无版本</li>
+        <li>235B 模型 <b>成本高 / 延迟高</b></li>
+        <li>无缓存/审计/可观测/评测</li>
+        <li><b>大 JSON 输入瓶颈</b>（致命）</li>
+        <li>HITL 未落地</li>
+      </ul>
+    </div>
+  </div>
+  <span class="slide-num">3 / 16</span>
+</div>
+
+<!-- Slide 4: 改造目标 -->
+<div class="slide">
+  <div class="slide-title">改造目标</div>
+  <div class="kpi">
+    <div class="kpi-item"><div class="num">↓60%</div><div class="lab">单次推导成本</div></div>
+    <div class="kpi-item"><div class="num">↓40%</div><div class="lab">端到端延迟</div></div>
+    <div class="kpi-item"><div class="num">10000</div><div class="lab">表/单任务支持</div></div>
+    <div class="kpi-item"><div class="num">≥90%</div><div class="lab">RAG Recall@10</div></div>
+    <div class="kpi-item"><div class="num">100</div><div class="lab">QPS（单机）</div></div>
+  </div>
+  <ul style="margin-top: 28px;">
+    <li>从 Dify 迁出，建立 <b>可工程化、可重放、可灰度</b> 的 Agent 系统</li>
+    <li>引入模型分流（7B/32B/Embedding）平衡 <b>成本与性能</b></li>
+    <li>突破大 JSON 上下文瓶颈，支持<b>万张表</b>级别指标体系构建</li>
+    <li>支持<b>离线部署</b>（内网无外网，CPU 起步 → API 验证 → GPU 上线）</li>
+    <li>补齐<b>审计 / 脱敏 / 可观测 / 人工确认</b></li>
+  </ul>
+  <span class="slide-num">4 / 16</span>
+</div>
+
+<!-- Slide 5: 总体技术路线 -->
+<div class="slide">
+  <div class="slide-title">总体技术路线</div>
+  <table>
+    <tr><th style="width:18%;">决策项</th><th style="width:32%;">选择</th><th>关键理由</th></tr>
+    <tr><td>主语言</td><td><b>Python（AI 核心）+ Java（接入）</b></td><td>AI 生态首发；Java 主栈保留在业务接入层</td></tr>
+    <tr><td>Agent 编排</td><td><b>LangGraph 1.0+</b></td><td>状态机式，可调试/重放，替代 Dify</td></tr>
+    <tr><td>推理引擎</td><td><b>vLLM 0.6（GPU）/ llama.cpp（CPU）</b></td><td>AWQ 量化 + guided_json 结构化输出</td></tr>
+    <tr><td>模型策略</td><td><b>三级分流</b></td><td>7B 分类 + 32B 推导 + BGE 检索</td></tr>
+    <tr><td>向量库</td><td><b>PostgreSQL 16 + pgvector 0.7.4</b></td><td>5 万 chunk 规模 HNSW 完全够用，<b>不更换</b></td></tr>
+    <tr><td>模型采购</td><td><b>路径 A：CPU → API → GPU</b></td><td>先验证后采购，风险最低</td></tr>
+    <tr><td>部署</td><td>Docker Compose 单机 + 全离线包</td><td>内网无外网</td></tr>
+  </table>
+  <span class="slide-num">5 / 16</span>
+</div>
+
+<!-- Slide 6: 模型分流 -->
+<div class="slide">
+  <div class="slide-title">模型分流策略</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1100 360" width="1100">
+      <rect width="1100" height="360" fill="transparent"/>
+      <rect x="60" y="40" width="300" height="280" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="12"/>
+      <text x="210" y="80" text-anchor="middle" font-size="24" font-weight="bold" fill="#1e3a8a">L1 轻量</text>
+      <text x="210" y="116" text-anchor="middle" font-size="16">Qwen2.5-7B-Instruct</text>
+      <line x1="100" y1="130" x2="320" y2="130" stroke="#93c5fd" stroke-width="2"/>
+      <text x="210" y="160" text-anchor="middle" font-size="14">• 业务域分类</text>
+      <text x="210" y="184" text-anchor="middle" font-size="14">• 意图识别</text>
+      <text x="210" y="208" text-anchor="middle" font-size="14">• Query 改写</text>
+      <text x="210" y="232" text-anchor="middle" font-size="14">• Schema 标准化</text>
+      <text x="210" y="276" text-anchor="middle" font-size="13" fill="#475569">显存 ~14GB FP16 / Q4 可 CPU</text>
+      <text x="210" y="304" text-anchor="middle" font-size="13" fill="#dc2626" font-weight="bold">高频调用 ≈ 80%</text>
+
+      <rect x="400" y="40" width="300" height="280" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="12"/>
+      <text x="550" y="80" text-anchor="middle" font-size="24" font-weight="bold" fill="#92400e">L2 重型</text>
+      <text x="550" y="116" text-anchor="middle" font-size="16">Qwen2.5-32B-Instruct-AWQ</text>
+      <line x1="440" y1="130" x2="660" y2="130" stroke="#fcd34d" stroke-width="2"/>
+      <text x="550" y="160" text-anchor="middle" font-size="14">• 指标推导 Agent 主链</text>
+      <text x="550" y="184" text-anchor="middle" font-size="14">• 复杂 ReAct 推理</text>
+      <text x="550" y="208" text-anchor="middle" font-size="14">• 结构化 JSON 输出</text>
+      <text x="550" y="232" text-anchor="middle" font-size="14">• guided_decoding</text>
+      <text x="550" y="276" text-anchor="middle" font-size="13" fill="#475569">显存 ~18GB INT4 / A100·L20</text>
+      <text x="550" y="304" text-anchor="middle" font-size="13" fill="#dc2626" font-weight="bold">中频调用 ≈ 20%</text>
+
+      <rect x="740" y="40" width="300" height="280" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="12"/>
+      <text x="890" y="80" text-anchor="middle" font-size="24" font-weight="bold" fill="#14532d">L3 向量</text>
+      <text x="890" y="116" text-anchor="middle" font-size="16">bge-m3 + bge-rerank-v2-m3</text>
+      <line x1="780" y1="130" x2="1000" y2="130" stroke="#86efac" stroke-width="2"/>
+      <text x="890" y="160" text-anchor="middle" font-size="14">• Embedding 1024 维</text>
+      <text x="890" y="184" text-anchor="middle" font-size="14">• 多语言支持</text>
+      <text x="890" y="208" text-anchor="middle" font-size="14">• 检索 + 重排</text>
+      <text x="890" y="232" text-anchor="middle" font-size="14">• dense + sparse 三合一</text>
+      <text x="890" y="276" text-anchor="middle" font-size="13" fill="#475569">显存 ~2GB / T4 / 4090 / CPU</text>
+      <text x="890" y="304" text-anchor="middle" font-size="13" fill="#dc2626" font-weight="bold">每次推理必用</text>
+    </svg>
+  </div>
+  <div class="callout">为什么不用 235B？单机部署显存吃紧，QPS 100 需要多卡；32B + RAG 已能覆盖 90% 场景，不达标再升级 72B-AWQ。</div>
+  <span class="slide-num">6 / 16</span>
+</div>
+
+<!-- Slide 7: 大 JSON 瓶颈 -->
+<div class="slide">
+  <div class="slide-title">大 JSON 瓶颈 · 五层组合拳</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1100 420" width="1100">
+      <defs>
+        <marker id="parr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+        </marker>
+      </defs>
+      <rect x="450" y="20" width="200" height="50" fill="#fee2e2" stroke="#b91c1c" stroke-width="2" rx="8"/>
+      <text x="550" y="46" text-anchor="middle" font-size="16" font-weight="bold">10000 张表 JSON</text>
+      <text x="550" y="64" text-anchor="middle" font-size="12" fill="#7f1d1d">原始 ~15MB · 爆 token</text>
+      <line x1="550" y1="70" x2="550" y2="92" stroke="#1e40af" stroke-width="2" marker-end="url(#parr)"/>
+
+      <rect x="400" y="96" width="300" height="42" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+      <text x="550" y="123" text-anchor="middle" font-size="15">L1: Schema 瘦身 → ~2MB</text>
+      <line x1="550" y1="138" x2="550" y2="160" stroke="#1e40af" stroke-width="2" marker-end="url(#parr)"/>
+
+      <rect x="400" y="164" width="300" height="42" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+      <text x="550" y="191" text-anchor="middle" font-size="15">L2: 切片 50 表/批 → 200 任务</text>
+      <line x1="550" y1="206" x2="550" y2="228" stroke="#1e40af" stroke-width="2" marker-end="url(#parr)"/>
+
+      <rect x="60" y="232" width="280" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="200" y="258" text-anchor="middle" font-size="15" font-weight="bold">Map：7B 并行分类</text>
+      <text x="200" y="278" text-anchor="middle" font-size="13">Celery × N worker</text>
+
+      <rect x="410" y="232" width="280" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="550" y="258" text-anchor="middle" font-size="15" font-weight="bold">合并 → 按域聚合</text>
+      <text x="550" y="278" text-anchor="middle" font-size="13">K 个业务域</text>
+
+      <rect x="760" y="232" width="280" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="900" y="258" text-anchor="middle" font-size="15" font-weight="bold">Reduce：32B 推导</text>
+      <text x="900" y="278" text-anchor="middle" font-size="13">每域一个 Agent</text>
+
+      <line x1="340" y1="262" x2="408" y2="262" stroke="#475569" stroke-width="2" marker-end="url(#parr)"/>
+      <line x1="690" y1="262" x2="758" y2="262" stroke="#475569" stroke-width="2" marker-end="url(#parr)"/>
+
+      <rect x="200" y="316" width="280" height="42" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+      <text x="340" y="343" text-anchor="middle" font-size="14">L3: guided_json + Outlines</text>
+
+      <rect x="500" y="316" width="280" height="42" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+      <text x="640" y="343" text-anchor="middle" font-size="14">L4: SSE 流式按域分块</text>
+
+      <rect x="800" y="316" width="240" height="42" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+      <text x="920" y="343" text-anchor="middle" font-size="14">L5: Redis 缓存</text>
+
+      <text x="550" y="394" text-anchor="middle" font-size="14" fill="#dc2626" font-weight="bold">单次最大输入 15MB → 10KB · 突破上下文限制 · 准确率 ↑</text>
+    </svg>
+  </div>
+  <span class="slide-num">7 / 16</span>
+</div>
+
+<!-- Slide 8: 总体架构 -->
+<div class="slide">
+  <div class="slide-title">总体技术架构</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1180 560" width="1150">
+      <rect x="20" y="20" width="1140" height="40" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="6"/>
+      <text x="40" y="46" font-size="16" font-weight="bold" fill="#1e3a8a">① 客户端：Web UI / Java 业务系统</text>
+
+      <rect x="20" y="80" width="1140" height="40" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="6"/>
+      <text x="40" y="106" font-size="16" font-weight="bold" fill="#1e3a8a">② 接入层：APISIX 3.10（限流 / 鉴权 / 灰度）</text>
+
+      <rect x="20" y="140" width="1140" height="80" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="6"/>
+      <text x="40" y="166" font-size="16" font-weight="bold" fill="#1e3a8a">③ 业务编排层（Python · FastAPI + LangGraph 1.0）</text>
+      <rect x="40" y="178" width="200" height="32" fill="#fff" stroke="#1e40af" rx="4"/>
+      <text x="140" y="200" text-anchor="middle" font-size="13">入口校验 + 脱敏</text>
+      <rect x="260" y="178" width="200" height="32" fill="#fff" stroke="#1e40af" rx="4"/>
+      <text x="360" y="200" text-anchor="middle" font-size="13">文档解析 + 瘦身</text>
+      <rect x="480" y="178" width="200" height="32" fill="#fff" stroke="#1e40af" rx="4"/>
+      <text x="580" y="200" text-anchor="middle" font-size="13">业务域分类 (Map)</text>
+      <rect x="700" y="178" width="200" height="32" fill="#fff" stroke="#1e40af" rx="4"/>
+      <text x="800" y="200" text-anchor="middle" font-size="13">Reduce 调度 + HITL</text>
+      <rect x="920" y="178" width="220" height="32" fill="#fff" stroke="#1e40af" rx="4"/>
+      <text x="1030" y="200" text-anchor="middle" font-size="13">聚合 + 流式输出</text>
+
+      <rect x="20" y="240" width="1140" height="80" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="6"/>
+      <text x="40" y="266" font-size="16" font-weight="bold" fill="#92400e">④ 智能体层（LangGraph ReAct）</text>
+      <rect x="40" y="280" width="240" height="32" fill="#fff" stroke="#b45309" rx="4"/>
+      <text x="160" y="302" text-anchor="middle" font-size="13">指标推导 Agent</text>
+      <rect x="300" y="280" width="240" height="32" fill="#fff" stroke="#b45309" rx="4"/>
+      <text x="420" y="302" text-anchor="middle" font-size="13">ToolCall: RAG 检索</text>
+      <rect x="560" y="280" width="240" height="32" fill="#fff" stroke="#b45309" rx="4"/>
+      <text x="680" y="302" text-anchor="middle" font-size="13">ToolCall: Web 搜索</text>
+      <rect x="820" y="280" width="320" height="32" fill="#fff" stroke="#b45309" rx="4"/>
+      <text x="980" y="302" text-anchor="middle" font-size="13">ToolCall: Schema 查询</text>
+
+      <rect x="20" y="340" width="370" height="100" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="6"/>
+      <text x="40" y="366" font-size="16" font-weight="bold" fill="#14532d">⑤ LLM Router</text>
+      <text x="40" y="390" font-size="14">• Mode-A: API（百炼/方舟）</text>
+      <text x="40" y="410" font-size="14">• Mode-B: vLLM 本地（GPU）</text>
+      <text x="40" y="430" font-size="14">• Mode-C: llama.cpp（CPU 验证期）</text>
+
+      <rect x="410" y="340" width="370" height="100" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="6"/>
+      <text x="430" y="366" font-size="16" font-weight="bold" fill="#14532d">⑥ RAG 服务</text>
+      <text x="430" y="390" font-size="14">• 混合检索：BM25 + Dense</text>
+      <text x="430" y="410" font-size="14">• bge-m3 + bge-rerank-v2-m3</text>
+      <text x="430" y="430" font-size="14">• Recall@10 ≥ 90%</text>
+
+      <rect x="800" y="340" width="340" height="100" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="6"/>
+      <text x="820" y="366" font-size="16" font-weight="bold" fill="#14532d">⑦ 外部工具</text>
+      <text x="820" y="390" font-size="14">• 博查 Web 搜索（可选）</text>
+      <text x="820" y="410" font-size="14">• 内部 DBA 查询</text>
+      <text x="820" y="430" font-size="14">• 业务规则引擎</text>
+
+      <rect x="20" y="460" width="1140" height="50" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="6"/>
+      <text x="40" y="490" font-size="16" font-weight="bold" fill="#1e3a8a">⑧ 存储：PostgreSQL 16 + pgvector · Redis 7.4 · MinIO / 本地磁盘</text>
+
+      <rect x="20" y="520" width="1140" height="36" fill="#fef9c3" stroke="#b45309" stroke-width="2" rx="6"/>
+      <text x="40" y="544" font-size="14" font-weight="bold" fill="#92400e">⑨ 可观测：OpenTelemetry → Prometheus / Grafana / Phoenix LLM Trace / Loki</text>
+    </svg>
+  </div>
+  <span class="slide-num">8 / 16</span>
+</div>
+
+<!-- Slide 9: 端到端数据流 -->
+<div class="slide">
+  <div class="slide-title">端到端数据流（10 步 + 旁路观测）</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1180 480" width="1150">
+      <defs>
+        <marker id="darr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+        </marker>
+      </defs>
+      <g font-size="14" font-family="Microsoft YaHei">
+        <rect x="40" y="40" width="200" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="140" y="68" text-anchor="middle" font-weight="bold">① 客户端上传</text>
+        <text x="140" y="88" text-anchor="middle" fill="#475569">file/prompt/table_json</text>
+
+        <rect x="280" y="40" width="200" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="380" y="68" text-anchor="middle" font-weight="bold">② 校验 + 脱敏</text>
+        <text x="380" y="88" text-anchor="middle" fill="#475569">Pydantic + Presidio</text>
+
+        <rect x="520" y="40" width="200" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="620" y="68" text-anchor="middle" font-weight="bold">③ 文档解析</text>
+        <text x="620" y="88" text-anchor="middle" fill="#475569">unstructured</text>
+
+        <rect x="760" y="40" width="200" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="860" y="68" text-anchor="middle" font-weight="bold">④ Schema 瘦身</text>
+        <text x="860" y="88" text-anchor="middle" fill="#475569">200B/表</text>
+
+        <rect x="760" y="160" width="200" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="860" y="188" text-anchor="middle" font-weight="bold">⑤ 业务域分类</text>
+        <text x="860" y="208" text-anchor="middle" fill="#475569">Qwen 7B（Map）</text>
+
+        <rect x="520" y="160" width="200" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="620" y="188" text-anchor="middle" font-weight="bold">⑥ 路由分支</text>
+        <text x="620" y="208" text-anchor="middle" fill="#475569">单/多/兜底</text>
+
+        <rect x="280" y="160" width="200" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="380" y="188" text-anchor="middle" font-weight="bold">⑦ 指标推导 Agent</text>
+        <text x="380" y="208" text-anchor="middle" fill="#475569">Qwen 32B（Reduce）</text>
+
+        <rect x="40" y="160" width="200" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="140" y="188" text-anchor="middle" font-weight="bold">⑧ 人工确认 HITL</text>
+        <text x="140" y="208" text-anchor="middle" fill="#475569">interrupt_before</text>
+
+        <rect x="40" y="280" width="200" height="60" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+        <text x="140" y="308" text-anchor="middle" font-weight="bold">⑨ 聚合 + 流式</text>
+        <text x="140" y="328" text-anchor="middle" fill="#475569">SSE 按域分块</text>
+
+        <rect x="280" y="280" width="200" height="60" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+        <text x="380" y="308" text-anchor="middle" font-weight="bold">⑩ 审计落库</text>
+        <text x="380" y="328" text-anchor="middle" fill="#475569">Phoenix + audit.*</text>
+
+        <rect x="520" y="280" width="440" height="60" fill="#fef9c3" stroke="#b45309" stroke-width="2" stroke-dasharray="6,4" rx="8"/>
+        <text x="740" y="308" text-anchor="middle" font-weight="bold" fill="#92400e">⑪ 旁路：OTel 全链路 Trace 上报</text>
+        <text x="740" y="328" text-anchor="middle" fill="#475569">每一步骤产生 span</text>
+
+        <line x1="240" y1="70" x2="280" y2="70" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="480" y1="70" x2="520" y2="70" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="720" y1="70" x2="760" y2="70" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="860" y1="100" x2="860" y2="158" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="760" y1="190" x2="720" y2="190" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="520" y1="190" x2="480" y2="190" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="280" y1="190" x2="240" y2="190" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="140" y1="220" x2="140" y2="278" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+        <line x1="240" y1="310" x2="280" y2="310" stroke="#1e40af" stroke-width="2" marker-end="url(#darr2)"/>
+
+        <rect x="40" y="380" width="1100" height="60" fill="#fff" stroke="#cbd5e1" rx="8"/>
+        <text x="60" y="406" font-size="14" font-weight="bold" fill="#1e3a8a">关键性能数据</text>
+        <text x="60" y="428" font-size="13">首字时间 P95 ≤ 3s · 单域 P95 ≤ 8s · 10 域 P95 ≤ 60s · 失败域单独重试不重跑（checkpoint）</text>
+      </g>
+    </svg>
+  </div>
+  <span class="slide-num">9 / 16</span>
+</div>
+
+<!-- Slide 10: 指标推导 Agent -->
+<div class="slide">
+  <div class="slide-title">指标推导 Agent 状态机（LangGraph 1.0）</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1100 460" width="1100">
+      <defs>
+        <marker id="aar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+        </marker>
+      </defs>
+      <ellipse cx="80" cy="100" rx="56" ry="30" fill="#fbbf24" stroke="#92400e" stroke-width="2"/>
+      <text x="80" y="108" text-anchor="middle" font-size="18" font-weight="bold">Start</text>
+
+      <rect x="200" y="76" width="160" height="56" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+      <text x="280" y="110" text-anchor="middle" font-size="16" font-weight="bold">Plan 决策</text>
+
+      <rect x="440" y="20" width="160" height="50" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="520" y="50" text-anchor="middle" font-size="14" font-weight="bold">Tool: RAG 检索</text>
+
+      <rect x="440" y="86" width="160" height="50" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="520" y="116" text-anchor="middle" font-size="14" font-weight="bold">Tool: Schema</text>
+
+      <rect x="440" y="152" width="160" height="50" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="520" y="182" text-anchor="middle" font-size="14" font-weight="bold">Tool: Web 搜索</text>
+
+      <rect x="680" y="86" width="140" height="50" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+      <text x="750" y="116" text-anchor="middle" font-size="16" font-weight="bold">Observe</text>
+
+      <rect x="200" y="240" width="160" height="56" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+      <text x="280" y="274" text-anchor="middle" font-size="16" font-weight="bold">Synthesize</text>
+
+      <rect x="440" y="240" width="160" height="56" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+      <text x="520" y="274" text-anchor="middle" font-size="16" font-weight="bold">Validate</text>
+
+      <rect x="680" y="240" width="160" height="56" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+      <text x="760" y="266" text-anchor="middle" font-size="14" font-weight="bold">HITL</text>
+      <text x="760" y="286" text-anchor="middle" font-size="12">interrupt_before</text>
+
+      <ellipse cx="940" cy="340" rx="56" ry="30" fill="#fbbf24" stroke="#92400e" stroke-width="2"/>
+      <text x="940" y="348" text-anchor="middle" font-size="18" font-weight="bold">End</text>
+
+      <line x1="136" y1="100" x2="198" y2="100" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="360" y1="92" x2="438" y2="45" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="360" y1="108" x2="438" y2="111" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="360" y1="124" x2="438" y2="177" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="600" y1="45" x2="678" y2="100" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="600" y1="111" x2="678" y2="111" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="600" y1="177" x2="678" y2="122" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="750" y1="136" x2="360" y2="260" stroke="#16a34a" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#aar2)"/>
+      <text x="560" y="206" font-size="14" fill="#16a34a" font-weight="bold">信息足够</text>
+      <line x1="750" y1="136" x2="280" y2="136" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#aar2)"/>
+      <text x="500" y="156" font-size="14" fill="#dc2626" font-weight="bold">信息不足，循环</text>
+      <line x1="360" y1="270" x2="438" y2="270" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="600" y1="270" x2="678" y2="270" stroke="#1e40af" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <line x1="600" y1="296" x2="884" y2="338" stroke="#16a34a" stroke-width="2.5" marker-end="url(#aar2)"/>
+      <text x="660" y="356" font-size="14" fill="#16a34a" font-weight="bold">直接通过</text>
+      <line x1="840" y1="270" x2="884" y2="320" stroke="#16a34a" stroke-width="2.5" marker-end="url(#aar2)"/>
+
+      <text x="40" y="408" font-size="14" font-weight="bold" fill="#1e3a8a">核心特性：</text>
+      <text x="160" y="408" font-size="14" fill="#475569">• Checkpointer 落 PG，崩溃可恢复</text>
+      <text x="160" y="432" font-size="14" fill="#475569">• interrupt_before 实现 HITL 暂停 / Replay 从任意 checkpoint 重放</text>
+    </svg>
+  </div>
+  <span class="slide-num">10 / 16</span>
+</div>
+
+<!-- Slide 11: PG 评估 -->
+<div class="slide">
+  <div class="slide-title">PG 向量库适配评估</div>
+  <div class="two-col">
+    <div>
+      <h3 style="color:#1e3a8a; margin-bottom: 12px;">知识库规模</h3>
+      <table>
+        <tr><th>指标</th><th>当前值</th></tr>
+        <tr><td>文档总数</td><td>&lt; 1000</td></tr>
+        <tr><td>字段总数</td><td>顶多几万</td></tr>
+        <tr><td>预估 chunk 数</td><td>&lt; 5 万</td></tr>
+        <tr><td>向量维度</td><td>1024（bge-m3）</td></tr>
+        <tr><td>总向量空间</td><td>~200MB</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3 style="color:#1e3a8a; margin-bottom: 12px;">pgvector 性能（@10w 向量）</h3>
+      <table>
+        <tr><th>索引</th><th>召回</th><th>QPS</th></tr>
+        <tr><td>暴力</td><td>100%</td><td>&lt; 10</td></tr>
+        <tr><td>IVFFlat</td><td>95%</td><td>~200</td></tr>
+        <tr style="background:#fef9c3;"><td><b>HNSW 推荐</b></td><td><b>99%</b></td><td><b>~1200</b></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="tip"><b>结论</b>：pgvector HNSW 在 5 万向量规模下 QPS 远超 100，<b>完全满足且无需更换</b>。规模 &gt; 500 万 或 多租户隔离需求出现时，再考虑 Milvus / Qdrant。</div>
+  <span class="slide-num">11 / 16</span>
+</div>
+
+<!-- Slide 12: Java vs Python -->
+<div class="slide">
+  <div class="slide-title">Java vs Python · 详细对比</div>
+  <table style="font-size: 12pt;">
+    <tr><th style="width:18%;">维度</th><th style="width:32%;">Python</th><th style="width:32%;">Java</th><th style="width:18%;">胜方</th></tr>
+    <tr><td>AI 生态</td><td>LangChain/Graph/vLLM 首发</td><td>LangChain4j/Spring AI 滞后</td><td><b>Python ★★★</b></td></tr>
+    <tr><td>模型推理</td><td>vLLM 原生 Python，可嵌入</td><td>必须 HTTP/gRPC 调用</td><td>Python</td></tr>
+    <tr><td>结构化输出</td><td>instructor/Outlines/Pydantic</td><td>成熟度差距大</td><td>Python</td></tr>
+    <tr><td>向量库 SDK</td><td>pgvector/Milvus SDK 第一时间</td><td>滞后</td><td>Python</td></tr>
+    <tr><td>并发模型</td><td>asyncio + 多进程，GIL 限制</td><td>JVM 线程池，高并发友好</td><td><b>Java ★★★</b></td></tr>
+    <tr><td>类型 / 工程化</td><td>Pydantic 2 弥补</td><td>Maven/Gradle 成熟</td><td>Java</td></tr>
+    <tr><td>团队习惯</td><td>需培训</td><td>公司主栈</td><td>Java</td></tr>
+    <tr><td>可观测</td><td>OTel + Phoenix LLM Trace</td><td>OTel 完善但 LLM trace 弱</td><td>Python</td></tr>
+    <tr><td>社区活跃度</td><td>LLM PR/release 极高频</td><td>约为 Python 1/5</td><td><b>Python ★★★</b></td></tr>
+  </table>
+  <div class="tip"><b>推荐</b>：<b>核心 AI 服务用 Python</b>（FastAPI + LangGraph + vLLM），<b>业务接入层 / 管理后台保留 Java</b>，通过 HTTP / gRPC 解耦。</div>
+  <span class="slide-num">12 / 16</span>
+</div>
+
+<!-- Slide 13: 最低环境配置 -->
+<div class="slide">
+  <div class="slide-title">最低环境配置（三阶段）</div>
+  <div class="three-col" style="margin-top: 18px;">
+    <div class="card" style="background:#dbeafe;">
+      <h3>阶段 1：CPU 验证</h3>
+      <p style="color:#475569; margin-bottom: 10px;"><b>0~2 周</b> · 跑通功能链路</p>
+      <ul style="padding-left: 20px;">
+        <li>llama.cpp + GGUF Q4</li>
+        <li>32C / 64G 虚机</li>
+        <li>7B Q4 ≈ 4.5GB</li>
+        <li>32B Q4 ≈ 19GB</li>
+        <li><b>不追性能</b></li>
+      </ul>
+    </div>
+    <div class="card" style="background:#fef3c7;">
+      <h3>阶段 2：API 验证</h3>
+      <p style="color:#475569; margin-bottom: 10px;"><b>2~6 周</b> · 选型对比</p>
+      <ul style="padding-left: 20px;">
+        <li>临时联网白名单</li>
+        <li>5 个候选：7B/14B/32B/72B/DeepSeek-V2.5</li>
+        <li>预算：2000~4000 元</li>
+        <li>Phoenix 全程 Trace</li>
+        <li><b>准/快/便宜 三维评估</b></li>
+      </ul>
+    </div>
+    <div class="card" style="background:#dcfce7;">
+      <h3>阶段 3：GPU 生产</h3>
+      <p style="color:#475569; margin-bottom: 10px;"><b>6 周后</b> · 上线</p>
+      <ul style="padding-left: 20px;">
+        <li>vLLM + 32B-AWQ</li>
+        <li>1×A100 40G 或 L20 48G</li>
+        <li>64C 256G + 2T NVMe</li>
+        <li>guided_json 上线</li>
+        <li><b>SLO P95 ≤ 5s</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>离线包总量 ~70GB</b>：Docker 镜像 15GB + Python wheel 3GB + 模型权重 50GB + 配置/脚本，一块 128GB U 盘可拷入内网。</div>
+  <span class="slide-num">13 / 16</span>
+</div>
+
+<!-- Slide 14: 部署拓扑 -->
+<div class="slide">
+  <div class="slide-title">部署拓扑（单机虚机 + Docker Compose）</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1100 440" width="1100">
+      <rect x="40" y="20" width="1020" height="400" fill="#fff" stroke="#1e3a8a" stroke-width="3" rx="12"/>
+      <text x="60" y="50" font-size="18" font-weight="bold" fill="#1e3a8a">虚机：64C / 128G（CPU 期）或 64C / 256G + 1×A100（生产）</text>
+
+      <g font-size="14" font-family="Microsoft YaHei">
+        <rect x="80" y="80" width="180" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="170" y="106" text-anchor="middle" font-weight="bold">APISIX</text>
+        <text x="170" y="126" text-anchor="middle">:8080</text>
+
+        <rect x="290" y="80" width="180" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="380" y="106" text-anchor="middle" font-weight="bold">FastAPI × 4</text>
+        <text x="380" y="126" text-anchor="middle">:8000~8007</text>
+
+        <rect x="500" y="80" width="180" height="60" fill="#dbeafe" stroke="#1e40af" stroke-width="2" rx="8"/>
+        <text x="590" y="106" text-anchor="middle" font-weight="bold">Celery × 2</text>
+        <text x="590" y="126" text-anchor="middle">worker</text>
+
+        <rect x="710" y="80" width="320" height="60" fill="#fef3c7" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="870" y="106" text-anchor="middle" font-weight="bold">vLLM / llama.cpp</text>
+        <text x="870" y="126" text-anchor="middle">:8001（OpenAI 兼容）</text>
+
+        <rect x="80" y="170" width="180" height="60" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+        <text x="170" y="196" text-anchor="middle" font-weight="bold">PostgreSQL 16</text>
+        <text x="170" y="216" text-anchor="middle">:5432 + pgvector</text>
+
+        <rect x="290" y="170" width="180" height="60" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+        <text x="380" y="196" text-anchor="middle" font-weight="bold">Redis 7.4</text>
+        <text x="380" y="216" text-anchor="middle">:6379</text>
+
+        <rect x="500" y="170" width="180" height="60" fill="#dcfce7" stroke="#15803d" stroke-width="2" rx="8"/>
+        <text x="590" y="196" text-anchor="middle" font-weight="bold">MinIO</text>
+        <text x="590" y="216" text-anchor="middle">:9000</text>
+
+        <rect x="710" y="170" width="320" height="60" fill="#fef9c3" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="870" y="196" text-anchor="middle" font-weight="bold">Arize Phoenix（LLM Trace）</text>
+        <text x="870" y="216" text-anchor="middle">:6006</text>
+
+        <rect x="80" y="260" width="180" height="60" fill="#fef9c3" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="170" y="286" text-anchor="middle" font-weight="bold">Prometheus</text>
+        <text x="170" y="306" text-anchor="middle">:9090</text>
+
+        <rect x="290" y="260" width="180" height="60" fill="#fef9c3" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="380" y="286" text-anchor="middle" font-weight="bold">Grafana</text>
+        <text x="380" y="306" text-anchor="middle">:3000</text>
+
+        <rect x="500" y="260" width="180" height="60" fill="#fef9c3" stroke="#b45309" stroke-width="2" rx="8"/>
+        <text x="590" y="286" text-anchor="middle" font-weight="bold">Flower</text>
+        <text x="590" y="306" text-anchor="middle">:5555（Celery 监控）</text>
+
+        <rect x="710" y="260" width="320" height="60" fill="#fff" stroke="#cbd5e1" stroke-width="2" rx="8"/>
+        <text x="870" y="286" text-anchor="middle" font-weight="bold" fill="#475569">模型权重</text>
+        <text x="870" y="306" text-anchor="middle" fill="#475569">/models（独立挂载目录）</text>
+
+        <text x="80" y="362" font-size="14" fill="#475569">蓝 = 业务/网关 &nbsp; 绿 = 数据/缓存 &nbsp; 黄 = 模型/监控/Trace</text>
+        <text x="80" y="388" font-size="14" fill="#475569">所有镜像 docker load 离线加载；docker-compose --profile cpu / --profile gpu 切换</text>
+      </g>
+    </svg>
+  </div>
+  <span class="slide-num">14 / 16</span>
+</div>
+
+<!-- Slide 15: 实施路线图 -->
+<div class="slide">
+  <div class="slide-title">实施路线图</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1100 280" width="1100">
+      <line x1="80" y1="140" x2="1020" y2="140" stroke="#1e40af" stroke-width="4"/>
+      <g font-family="Microsoft YaHei">
+        <circle cx="120" cy="140" r="20" fill="#fbbf24" stroke="#92400e" stroke-width="3"/>
+        <text x="120" y="146" text-anchor="middle" font-size="14" font-weight="bold">M0</text>
+        <text x="120" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">启动</text>
+        <text x="120" y="180" text-anchor="middle" font-size="12" fill="#475569">W0</text>
+        <text x="120" y="200" text-anchor="middle" font-size="12">环境就绪</text>
+
+        <circle cx="240" cy="140" r="20" fill="#3b82f6" stroke="#1e40af" stroke-width="3"/>
+        <text x="240" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M1</text>
+        <text x="240" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">CPU 跑通</text>
+        <text x="240" y="180" text-anchor="middle" font-size="12" fill="#475569">W1-W2</text>
+        <text x="240" y="200" text-anchor="middle" font-size="12">100 表用例</text>
+
+        <circle cx="360" cy="140" r="20" fill="#3b82f6" stroke="#1e40af" stroke-width="3"/>
+        <text x="360" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M2</text>
+        <text x="360" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">API 选型</text>
+        <text x="360" y="180" text-anchor="middle" font-size="12" fill="#475569">W3-W4</text>
+        <text x="360" y="200" text-anchor="middle" font-size="12">5 模型对比</text>
+
+        <circle cx="480" cy="140" r="20" fill="#3b82f6" stroke="#1e40af" stroke-width="3"/>
+        <text x="480" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M3</text>
+        <text x="480" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">性能优化</text>
+        <text x="480" y="180" text-anchor="middle" font-size="12" fill="#475569">W5-W6</text>
+        <text x="480" y="200" text-anchor="middle" font-size="12">P95 达标</text>
+
+        <circle cx="600" cy="140" r="20" fill="#3b82f6" stroke="#1e40af" stroke-width="3"/>
+        <text x="600" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M4</text>
+        <text x="600" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">离线打包</text>
+        <text x="600" y="180" text-anchor="middle" font-size="12" fill="#475569">W7</text>
+        <text x="600" y="200" text-anchor="middle" font-size="12">虚机可装</text>
+
+        <circle cx="720" cy="140" r="20" fill="#3b82f6" stroke="#1e40af" stroke-width="3"/>
+        <text x="720" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M5</text>
+        <text x="720" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">UAT</text>
+        <text x="720" y="180" text-anchor="middle" font-size="12" fill="#475569">W8</text>
+        <text x="720" y="200" text-anchor="middle" font-size="12">业务方试用</text>
+
+        <circle cx="840" cy="140" r="20" fill="#16a34a" stroke="#14532d" stroke-width="3"/>
+        <text x="840" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M6</text>
+        <text x="840" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">GPU 上线</text>
+        <text x="840" y="180" text-anchor="middle" font-size="12" fill="#475569">W9-W10</text>
+        <text x="840" y="200" text-anchor="middle" font-size="12">vLLM 切换</text>
+
+        <circle cx="960" cy="140" r="20" fill="#16a34a" stroke="#14532d" stroke-width="3"/>
+        <text x="960" y="146" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">M7</text>
+        <text x="960" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">持续优化</text>
+        <text x="960" y="180" text-anchor="middle" font-size="12" fill="#475569">长期</text>
+        <text x="960" y="200" text-anchor="middle" font-size="12">月度回归</text>
+      </g>
+    </svg>
+  </div>
+  <div class="callout"><b>关键里程碑</b>：W2 完成 CPU 链路 → W6 性能达标 → W10 GPU 切换上线，<b>总周期 10 周</b>。</div>
+  <span class="slide-num">15 / 16</span>
+</div>
+
+<!-- Slide 16: 风险与对策 -->
+<div class="slide">
+  <div class="slide-title">风险与对策 · 致谢</div>
+  <table style="font-size: 12pt;">
+    <tr><th>风险</th><th>影响</th><th>对策</th></tr>
+    <tr><td>32B 模型推导精度不达预期</td><td>高</td><td>API 阶段并行测 72B；预留升级路径</td></tr>
+    <tr><td>大 JSON 分类落入"杂项域"</td><td>中</td><td>设兜底域 + 业务复核环节</td></tr>
+    <tr><td>pgvector 性能拐点</td><td>低</td><td>监控 P95；规模达 200 万切 Milvus</td></tr>
+    <tr><td>离线模型版本管理混乱</td><td>中</td><td>SHA256 校验 + 版本号 + 模型仓</td></tr>
+    <tr><td>Java 团队 Python 上手慢</td><td>中</td><td>脚手架 + 培训；前两月 AI 团队主导</td></tr>
+    <tr><td>Web 搜索内网不可用</td><td>低</td><td>替换为内部资料库工具 / 关闭</td></tr>
+    <tr><td>Phoenix/OTel 数据量过大</td><td>低</td><td>采样率 10%；关键链路 100%</td></tr>
+  </table>
+  <div class="tip" style="margin-top: 24px;">
+    <b>整体策略</b>：路径 A → CPU 验证（W2）→ API 选型（W4）→ 性能达标（W6）→ 离线包（W7）→ UAT（W8）→ GPU 上线（W10）。<br>
+    <b>关键收益</b>：成本 ↓60% · 延迟 ↓40% · 支持万张表 · 工程化达标。
+  </div>
+  <div class="center" style="margin-top: 36px; font-size: 24pt; color: #1e3a8a; font-weight: bold;">谢谢 · Q&amp;A</div>
+  <span class="slide-num">16 / 16</span>
+</div>
+
+</div>
+</body>
+</html>

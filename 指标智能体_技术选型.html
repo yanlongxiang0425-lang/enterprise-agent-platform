@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>指标体系构建智能体 · 技术选型文档</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+@page { size: A4; margin: 2.2cm 2cm; }
+body { font-family: "Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif; font-size: 11pt; line-height: 1.7; color: #1f2937; max-width: 900px; margin: 0 auto; padding: 24px; background: #fff; }
+h1 { font-size: 22pt; color: #1e3a8a; border-bottom: 3px solid #1e3a8a; padding-bottom: 8px; margin-top: 24px; }
+h2 { font-size: 16pt; color: #1e40af; border-left: 5px solid #1e40af; padding-left: 10px; margin-top: 28px; }
+h3 { font-size: 13pt; color: #1d4ed8; margin-top: 18px; }
+h4 { font-size: 11.5pt; color: #2563eb; margin-top: 14px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 10.5pt; }
+th, td { border: 1px solid #cbd5e1; padding: 6px 10px; vertical-align: top; }
+th { background: #dbeafe; font-weight: 600; color: #1e3a8a; }
+tr:nth-child(even) td { background: #f8fafc; }
+code { background: #f1f5f9; color: #be185d; padding: 1px 5px; border-radius: 3px; font-family: "Consolas","Courier New",monospace; font-size: 10pt; }
+pre { background: #0f172a; color: #e2e8f0; padding: 12px 14px; border-radius: 5px; overflow-x: auto; font-size: 9.5pt; line-height: 1.5; font-family: "Consolas","Courier New",monospace; }
+pre code { background: transparent; color: inherit; padding: 0; }
+.callout { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+.tip { background: #dcfce7; border-left: 4px solid #16a34a; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+.warn { background: #fee2e2; border-left: 4px solid #dc2626; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+.center { text-align: center; }
+.figcap { text-align: center; color: #64748b; font-size: 10pt; margin: 6px 0 18px; font-style: italic; }
+.toc { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px 24px; border-radius: 6px; margin: 18px 0; }
+.toc li { margin: 4px 0; }
+.figure-wrap { text-align: center; margin: 14px 0; }
+ul, ol { margin: 8px 0 8px 0; padding-left: 28px; }
+li { margin: 4px 0; }
+.meta { color: #64748b; font-size: 10pt; }
+.badge { display:inline-block; background:#1e40af; color:#fff; padding:2px 8px; border-radius:10px; font-size:9pt; margin-right:4px; }
+hr { border: none; border-top: 1px dashed #cbd5e1; margin: 26px 0; }
+</style>
+</head>
+<body>
+
+<h1>指标体系构建智能体 · 技术选型文档</h1>
+<p class="meta">版本：v1.0 &nbsp;|&nbsp; 日期：2026-05-14 &nbsp;|&nbsp; 适用范围：Dify 现有方案的下一代重构 &nbsp;|&nbsp; 作者：架构设计组</p>
+
+<div class="toc">
+<strong>目录</strong>
+<ol>
+<li>背景与目标</li>
+<li>总体技术路线</li>
+<li>模型分流策略</li>
+<li>大 JSON 瓶颈解决方案</li>
+<li>组件清单（详版）</li>
+<li>Java vs Python 详细对比</li>
+<li>PG 向量库适配评估</li>
+<li>最低环境配置（三阶段）</li>
+<li>requirements.txt 完整版</li>
+<li>docker-compose 骨架</li>
+<li>选型决策一页纸 &amp; 验收清单</li>
+</ol>
+</div>
+
+<h2>1. 背景与目标</h2>
+
+<h3>1.1 现状</h3>
+<p>当前指标体系构建智能体基于 <strong>Dify Workflow</strong> 实现，部署于 <code>aigc.midea.com/dify2</code>，应用 ID <code>35b561f1-db2a-4676-8b61-2b5604731400</code>。主链路使用 <strong>Qwen3-235B-A22B (CHAT)</strong> 模型，Agent 策略为 <strong>ReAct</strong>，工具包含 <strong>BOCHA_SEARCH</strong>（博查 Web 搜索）和<strong>领域体系构建 RAG 检索</strong>。</p>
+
+<div class="figure-wrap">
+<svg viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" width="760">
+  <defs>
+    <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+    </marker>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dbeafe"/>
+      <stop offset="100%" stop-color="#93c5fd"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="780" height="360" fill="#f8fafc"/>
+  <text x="390" y="24" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e3a8a">业务流程图：构建指标体系问答（来源：用户白板）</text>
+
+  <ellipse cx="100" cy="60" rx="50" ry="20" fill="#fbbf24" stroke="#92400e"/>
+  <text x="100" y="65" text-anchor="middle" font-size="12" font-weight="bold">start</text>
+
+  <rect x="200" y="40" width="160" height="40" fill="url(#g1)" stroke="#1e40af" rx="6"/>
+  <text x="280" y="65" text-anchor="middle" font-size="12">数据连接与采集</text>
+
+  <rect x="200" y="105" width="160" height="40" fill="url(#g1)" stroke="#1e40af" rx="6"/>
+  <text x="280" y="130" text-anchor="middle" font-size="12">表结构理解 + 领域分类</text>
+
+  <rect x="200" y="170" width="160" height="40" fill="url(#g1)" stroke="#1e40af" rx="6"/>
+  <text x="280" y="195" text-anchor="middle" font-size="12">指定领域搜索知识库</text>
+
+  <rect x="200" y="235" width="160" height="40" fill="url(#g1)" stroke="#1e40af" rx="6"/>
+  <text x="280" y="260" text-anchor="middle" font-size="12">指标推导（特定格式）</text>
+
+  <rect x="440" y="170" width="170" height="40" fill="#fde68a" stroke="#92400e" rx="6"/>
+  <text x="525" y="190" text-anchor="middle" font-size="11">重新评估可行性</text>
+  <text x="525" y="204" text-anchor="middle" font-size="11">或人为确认</text>
+
+  <rect x="440" y="105" width="170" height="40" fill="url(#g1)" stroke="#1e40af" rx="6"/>
+  <text x="525" y="130" text-anchor="middle" font-size="12">整合汇总输出格式</text>
+
+  <ellipse cx="660" cy="60" rx="50" ry="20" fill="#fbbf24" stroke="#92400e"/>
+  <text x="660" y="65" text-anchor="middle" font-size="12" font-weight="bold">end</text>
+
+  <line x1="150" y1="60" x2="195" y2="60" stroke="#1e40af" stroke-width="2" marker-end="url(#arr1)"/>
+  <line x1="280" y1="80" x2="280" y2="100" stroke="#1e40af" stroke-width="2" marker-end="url(#arr1)"/>
+  <line x1="280" y1="145" x2="280" y2="165" stroke="#1e40af" stroke-width="2" marker-end="url(#arr1)"/>
+  <line x1="280" y1="210" x2="280" y2="230" stroke="#1e40af" stroke-width="2" marker-end="url(#arr1)"/>
+  <line x1="360" y1="255" x2="440" y2="200" stroke="#1e40af" stroke-width="2" marker-end="url(#arr1)"/>
+  <line x1="525" y1="170" x2="525" y2="150" stroke="#16a34a" stroke-width="2" marker-end="url(#arr1)"/>
+  <text x="540" y="162" font-size="10" fill="#16a34a">通过</text>
+  <line x1="440" y1="190" x2="360" y2="190" stroke="#dc2626" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arr1)"/>
+  <text x="370" y="184" font-size="10" fill="#dc2626">需要重做</text>
+  <line x1="525" y1="105" x2="525" y2="85" stroke="#1e40af" stroke-width="2"/>
+  <line x1="525" y1="60" x2="610" y2="60" stroke="#1e40af" stroke-width="2" marker-end="url(#arr1)"/>
+  <line x1="280" y1="280" x2="280" y2="320" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="290" y="310" font-size="10" fill="#475569">按领域循环</text>
+</svg>
+<div class="figcap">图 1-1 业务流程图（按用户白板还原）</div>
+</div>
+
+<h3>1.2 痛点</h3>
+<ol>
+<li>Dify 拖拽实现，<strong>工程化与版本管理薄弱</strong>，难以单元测试与回归</li>
+<li>多个 Python 代码节点处理"脏活"（Unicode 转义、字符串扁平化、JSON 聚合），逻辑散落</li>
+<li>单 Agent + 235B 巨型模型，<strong>单次 Token 成本与延迟过高</strong></li>
+<li>缺缓存、可观测、评测闭环</li>
+<li>业务流程图中"重新评估/人为确认"环节尚未落地</li>
+<li><strong>大 JSON 输入瓶颈</strong>：上千上万张表的 schema 拼成一个 JSON，超出上下文窗口</li>
+<li>知识库默认 pgvector，召回率与性能尚未做过严肃评估</li>
+<li>知识库 Excel/Word 更新流程不规范，缺自动化 pipeline</li>
+</ol>
+
+<h3>1.3 改造目标</h3>
+<ul>
+<li>从 Dify 迁出，自建可控的 Python AI 服务</li>
+<li>复用现有 PG 向量库（评估后确认满足）</li>
+<li>引入模型分流策略降本提速</li>
+<li>解决大 JSON 输入瓶颈</li>
+<li>提供离线部署能力（内网无外网）</li>
+<li>补齐审计、脱敏、可观测、人工确认</li>
+</ul>
+
+<h2>2. 总体技术路线</h2>
+
+<table>
+<tr><th>决策项</th><th>选择</th><th>关键理由</th></tr>
+<tr><td>主语言</td><td><strong>Python</strong>（AI 核心）+ Java（业务接入）</td><td>AI 生态首发支持；Java 团队负责接入/管理后台</td></tr>
+<tr><td>Agent 编排</td><td><strong>LangGraph 1.0+</strong></td><td>状态机式编排，可调试、可重放，告别 Dify 不可控拖拽</td></tr>
+<tr><td>LLM 推理引擎</td><td><strong>vLLM 0.6+</strong>（GPU）/ <strong>llama.cpp</strong>（CPU）</td><td>支持 AWQ/GPTQ 量化、guided_json 结构化输出</td></tr>
+<tr><td>模型策略</td><td><strong>三级分流</strong></td><td>7B 做分类/路由，32B-AWQ 做推导，Embedding/Rerank 用 BGE</td></tr>
+<tr><td>向量库</td><td><strong>PostgreSQL 16 + pgvector 0.7.4</strong></td><td>知识库 &lt; 5 万 chunk，HNSW 性能足够；同实例分 schema</td></tr>
+<tr><td>模型采购</td><td><strong>路径 A</strong>：CPU 验证 → API 选型 → GPU 自部署</td><td>风险最低，先验证后采购</td></tr>
+<tr><td>部署</td><td>单机虚拟机 + Docker Compose，<strong>全离线包</strong></td><td>内网无外网，必须自带 wheel/镜像/模型</td></tr>
+</table>
+
+<h2>3. 模型分流策略</h2>
+
+<div class="figure-wrap">
+<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" width="760">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="760" height="320" fill="#f8fafc"/>
+  <text x="380" y="24" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e3a8a">三级模型分流策略</text>
+
+  <rect x="40" y="60" width="200" height="220" fill="#dbeafe" stroke="#1e40af" rx="8"/>
+  <text x="140" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">L1 轻量</text>
+  <text x="140" y="108" text-anchor="middle" font-size="11">Qwen2.5-7B-Instruct</text>
+  <line x1="60" y1="118" x2="220" y2="118" stroke="#93c5fd"/>
+  <text x="140" y="138" text-anchor="middle" font-size="11">• 业务域分类</text>
+  <text x="140" y="156" text-anchor="middle" font-size="11">• 意图识别</text>
+  <text x="140" y="174" text-anchor="middle" font-size="11">• Query 改写</text>
+  <text x="140" y="192" text-anchor="middle" font-size="11">• Schema 标准化</text>
+  <text x="140" y="220" text-anchor="middle" font-size="10" fill="#475569">显存 ~14GB FP16</text>
+  <text x="140" y="236" text-anchor="middle" font-size="10" fill="#475569">CPU 也可跑（Q4）</text>
+  <text x="140" y="262" text-anchor="middle" font-size="10" fill="#dc2626" font-weight="bold">高频调用 ≈80%</text>
+
+  <rect x="280" y="60" width="200" height="220" fill="#fef3c7" stroke="#b45309" rx="8"/>
+  <text x="380" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#92400e">L2 重型</text>
+  <text x="380" y="108" text-anchor="middle" font-size="11">Qwen2.5-32B-Instruct-AWQ</text>
+  <line x1="300" y1="118" x2="460" y2="118" stroke="#fcd34d"/>
+  <text x="380" y="138" text-anchor="middle" font-size="11">• 指标推导 Agent</text>
+  <text x="380" y="156" text-anchor="middle" font-size="11">• 复杂 ReAct 链</text>
+  <text x="380" y="174" text-anchor="middle" font-size="11">• 结构化输出</text>
+  <text x="380" y="192" text-anchor="middle" font-size="11">• 高质量场景</text>
+  <text x="380" y="220" text-anchor="middle" font-size="10" fill="#475569">显存 ~18GB INT4</text>
+  <text x="380" y="236" text-anchor="middle" font-size="10" fill="#475569">单卡 A100/L20</text>
+  <text x="380" y="262" text-anchor="middle" font-size="10" fill="#dc2626" font-weight="bold">中频调用 ≈20%</text>
+
+  <rect x="520" y="60" width="200" height="220" fill="#dcfce7" stroke="#15803d" rx="8"/>
+  <text x="620" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#14532d">L3 向量</text>
+  <text x="620" y="108" text-anchor="middle" font-size="11">bge-m3 + bge-reranker</text>
+  <line x1="540" y1="118" x2="700" y2="118" stroke="#86efac"/>
+  <text x="620" y="138" text-anchor="middle" font-size="11">• Embedding 1024 维</text>
+  <text x="620" y="156" text-anchor="middle" font-size="11">• 多语言支持</text>
+  <text x="620" y="174" text-anchor="middle" font-size="11">• 检索重排</text>
+  <text x="620" y="192" text-anchor="middle" font-size="11">• dense + sparse</text>
+  <text x="620" y="220" text-anchor="middle" font-size="10" fill="#475569">显存 ~2GB</text>
+  <text x="620" y="236" text-anchor="middle" font-size="10" fill="#475569">T4 / 4090 / CPU</text>
+  <text x="620" y="262" text-anchor="middle" font-size="10" fill="#dc2626" font-weight="bold">每次推理必用</text>
+
+  <text x="140" y="304" text-anchor="middle" font-size="11" fill="#1e3a8a" font-weight="bold">便宜·快</text>
+  <text x="380" y="304" text-anchor="middle" font-size="11" fill="#92400e" font-weight="bold">慢·准·贵</text>
+  <text x="620" y="304" text-anchor="middle" font-size="11" fill="#14532d" font-weight="bold">基础设施</text>
+</svg>
+<div class="figcap">图 3-1 三级模型分流策略</div>
+</div>
+
+<div class="callout">
+<strong>为什么不用 Qwen3-235B-A22B？</strong><br>
+即使是 MoE 激活 22B，单机部署显存仍紧张（约 140GB FP8 / 200GB FP16）；单 Token 推理延迟高，QPS 100 需要多卡集群。实测 32B + RAG 已覆盖企业指标推导 90% 场景，等 GPU 采购后如果不达标再升级 72B-AWQ 即可。
+</div>
+
+<h2>4. 大 JSON 瓶颈解决方案（核心）</h2>
+
+<p><strong>问题本质</strong>：上千上万张表的 schema 拼成一个 JSON，会超出模型上下文窗口，且对超长输入注意力会被稀释，业务域分类与指标推导效果都会变差。</p>
+
+<div class="figure-wrap">
+<svg viewBox="0 0 800 470" xmlns="http://www.w3.org/2000/svg" width="780">
+  <defs>
+    <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="800" height="470" fill="#f8fafc"/>
+  <text x="400" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e3a8a">大 JSON 处理：5 层组合拳（Schema 瘦身 + Map-Reduce + 结构化输出 + 流式 + 缓存）</text>
+
+  <rect x="320" y="44" width="160" height="40" fill="#fee2e2" stroke="#b91c1c" rx="6"/>
+  <text x="400" y="62" text-anchor="middle" font-size="12" font-weight="bold">10000 张表 JSON</text>
+  <text x="400" y="78" text-anchor="middle" font-size="10" fill="#7f1d1d">原始 ~15MB</text>
+
+  <line x1="400" y1="86" x2="400" y2="106" stroke="#1e40af" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <rect x="280" y="110" width="240" height="34" fill="#dbeafe" stroke="#1e40af" rx="6"/>
+  <text x="400" y="132" text-anchor="middle" font-size="12">L1: Schema 瘦身（去冗余字段）</text>
+  <text x="540" y="132" text-anchor="start" font-size="10" fill="#475569">→ ~2MB</text>
+
+  <line x1="400" y1="146" x2="400" y2="166" stroke="#1e40af" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <rect x="280" y="170" width="240" height="34" fill="#dbeafe" stroke="#1e40af" rx="6"/>
+  <text x="400" y="192" text-anchor="middle" font-size="12">L2: 按 50 表/批切片 → 200 个分类任务</text>
+
+  <line x1="400" y1="206" x2="400" y2="226" stroke="#1e40af" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <rect x="60" y="230" width="180" height="44" fill="#fef3c7" stroke="#b45309" rx="6"/>
+  <text x="150" y="248" text-anchor="middle" font-size="11" font-weight="bold">Map：7B 并行分类</text>
+  <text x="150" y="266" text-anchor="middle" font-size="10">Celery × N worker</text>
+
+  <rect x="310" y="230" width="180" height="44" fill="#fef3c7" stroke="#b45309" rx="6"/>
+  <text x="400" y="248" text-anchor="middle" font-size="11" font-weight="bold">合并 → 按域聚合</text>
+  <text x="400" y="266" text-anchor="middle" font-size="10">K 个业务域</text>
+
+  <rect x="560" y="230" width="180" height="44" fill="#fef3c7" stroke="#b45309" rx="6"/>
+  <text x="650" y="248" text-anchor="middle" font-size="11" font-weight="bold">Reduce：32B 推导</text>
+  <text x="650" y="266" text-anchor="middle" font-size="10">每域一个 Agent</text>
+
+  <line x1="240" y1="252" x2="305" y2="252" stroke="#475569" stroke-width="2" marker-end="url(#arr3)"/>
+  <line x1="490" y1="252" x2="555" y2="252" stroke="#475569" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <line x1="400" y1="274" x2="400" y2="296" stroke="#1e40af" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <rect x="200" y="300" width="400" height="34" fill="#dcfce7" stroke="#15803d" rx="6"/>
+  <text x="400" y="322" text-anchor="middle" font-size="12">L3: guided_json + Outlines 强约束结构化输出</text>
+
+  <line x1="400" y1="334" x2="400" y2="356" stroke="#1e40af" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <rect x="200" y="360" width="400" height="34" fill="#dcfce7" stroke="#15803d" rx="6"/>
+  <text x="400" y="382" text-anchor="middle" font-size="12">L4: SSE 流式按域分块返回（首字 ≤ 3s）</text>
+
+  <line x1="400" y1="394" x2="400" y2="416" stroke="#1e40af" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <rect x="200" y="420" width="400" height="34" fill="#dcfce7" stroke="#15803d" rx="6"/>
+  <text x="400" y="442" text-anchor="middle" font-size="12">L5: Redis 缓存（schema hash → 分类/推导结果）</text>
+</svg>
+<div class="figcap">图 4-1 大 JSON 处理 · 五层组合拳</div>
+</div>
+
+<table>
+<tr><th>层</th><th>手段</th><th>效果</th></tr>
+<tr><td>L1 Schema 瘦身</td><td>只保留 <code>table / column / comment / dtype / sample</code></td><td>单表从 ~1.5KB 压到 ~200B</td></tr>
+<tr><td>L2 两阶段 Map-Reduce</td><td>7B 模型按 50 张/批做分类，32B 模型按域做推导</td><td>单次输入 ≤ 10KB（远小于上下文窗口）</td></tr>
+<tr><td>L3 结构化输出约束</td><td>vLLM <code>guided_json</code> + JSON Schema + Outlines 兜底</td><td>杜绝模型输出"散文式" JSON</td></tr>
+<tr><td>L4 流式 + SSE</td><td>按业务域分块流式返回，前端渐进渲染</td><td>首字时间 P95 ≤ 3s</td></tr>
+<tr><td>L5 缓存 + 增量</td><td>表 schema MD5 作 cache key；命中跳过 LLM</td><td>重复请求 QPS 提升 10×</td></tr>
+</table>
+
+<div class="tip">
+<strong>容量估算</strong>：10000 张表瘦身后 2MB；分类 200 批次（并行 ≤2 分钟）；推导任务按域 50 个并行（GPU 期 ≤ 15 分钟）。CPU 验证期只测功能不上量。
+</div>
+
+<h2>5. 组件清单（详版）</h2>
+
+<h3>5.1 编排与 Agent 层</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th><th>备注</th></tr>
+<tr><td><strong>LangChain</strong></td><td><strong>1.0.5+</strong></td><td>工具/模型抽象</td><td>1.0 GA 版，API 稳定，不再使用 0.x</td></tr>
+<tr><td><strong>LangGraph</strong></td><td><strong>1.0.3+</strong></td><td>多步骤状态机编排</td><td>替代 Dify 工作流，支持中断/恢复/重放</td></tr>
+<tr><td>langgraph-checkpoint</td><td>1.0.5+</td><td>状态持久化</td><td>PostgresSaver 把状态落 PG</td></tr>
+<tr><td>Pydantic</td><td>2.9.2</td><td>数据校验</td><td>与 FastAPI / LangChain 1.0 强绑定</td></tr>
+<tr><td>instructor</td><td>1.6.4</td><td>LLM 结构化输出</td><td>guided_json 兜底</td></tr>
+<tr><td>Outlines</td><td>0.1.7</td><td>受限文法生成</td><td>复杂 JSON Schema 场景</td></tr>
+</table>
+
+<h3>5.2 LLM 推理与模型</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th><th>备注</th></tr>
+<tr><td>vLLM</td><td>0.6.3.post1</td><td>GPU 推理引擎</td><td>支持 AWQ/GPTQ/FP8 + guided_decoding</td></tr>
+<tr><td>llama-cpp-python</td><td>0.3.1</td><td>CPU 推理引擎</td><td><strong>前期 CPU 验证用</strong>，加载 GGUF 量化模型</td></tr>
+<tr><td>Qwen2.5-7B-Instruct</td><td>官方 HF</td><td>轻量分流</td><td>GGUF Q4_K_M ≈ 4.5GB，CPU 可跑</td></tr>
+<tr><td>Qwen2.5-32B-Instruct-AWQ</td><td>官方 HF</td><td>主推导</td><td>INT4 约 18GB 显存，单卡 A100/L20 可跑</td></tr>
+<tr><td>bge-m3</td><td>1.5 (BAAI)</td><td>Embedding</td><td>1024 维，dense+sparse+ColBERT</td></tr>
+<tr><td>bge-reranker-v2-m3</td><td>(BAAI)</td><td>Rerank</td><td>top-50 → top-5</td></tr>
+</table>
+
+<h3>5.3 RAG 与文档解析</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th></tr>
+<tr><td>LlamaIndex</td><td>0.12.x</td><td>RAG 框架（可选，也可自建）</td></tr>
+<tr><td>unstructured</td><td>0.15.13</td><td>统一文档解析（docx/xlsx/pdf/html）</td></tr>
+<tr><td>python-docx</td><td>1.1.2</td><td>Word 章节级切分</td></tr>
+<tr><td>openpyxl</td><td>3.1.5</td><td>Excel 字段级 + 单元格批注</td></tr>
+<tr><td>pandas</td><td>2.2.3</td><td>表格处理</td></tr>
+<tr><td>pypdf</td><td>5.1.0</td><td>PDF 解析兜底</td></tr>
+<tr><td>tiktoken</td><td>0.8.0</td><td>Token 计数</td></tr>
+<tr><td>FlagEmbedding</td><td>1.3.x</td><td>BGE 模型本地加载</td></tr>
+</table>
+
+<h3>5.4 向量库与数据库</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th><th>备注</th></tr>
+<tr><td>PostgreSQL</td><td>16.4</td><td>业务库 + 向量库</td><td>同实例不同 schema</td></tr>
+<tr><td>pgvector</td><td>0.7.4</td><td>向量扩展</td><td>HNSW，<code>m=16, ef_construction=64</code></td></tr>
+<tr><td>zhparser / pg_jieba</td><td>最新</td><td>中文全文检索</td><td>与向量召回混合</td></tr>
+<tr><td>Redis</td><td>7.4.1</td><td>缓存 + Celery Broker</td><td>LRU 策略，16GB</td></tr>
+<tr><td>MinIO</td><td>RELEASE.2024-10</td><td>对象存储</td><td>虚机可挂磁盘代替</td></tr>
+</table>
+
+<h3>5.5 Web 与服务层</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th></tr>
+<tr><td>FastAPI</td><td>0.115.4</td><td>API 框架</td></tr>
+<tr><td>Uvicorn</td><td>0.32.0</td><td>ASGI Server</td></tr>
+<tr><td>gunicorn</td><td>23.0.0</td><td>进程管理（生产）</td></tr>
+<tr><td>httpx</td><td>0.27.2</td><td>异步 HTTP 客户端</td></tr>
+<tr><td>SQLAlchemy</td><td>2.0.36</td><td>异步 ORM</td></tr>
+<tr><td>asyncpg</td><td>0.30.0</td><td>PG 异步驱动</td></tr>
+<tr><td>alembic</td><td>1.13.3</td><td>DB 迁移版本化</td></tr>
+</table>
+
+<h3>5.6 任务编排与异步</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th></tr>
+<tr><td>Celery</td><td>5.4.0</td><td>异步任务队列（业务域并行推导）</td></tr>
+<tr><td>flower</td><td>2.0.1</td><td>Celery 监控</td></tr>
+<tr><td>APScheduler</td><td>3.10.4</td><td>定时任务（知识库增量更新）</td></tr>
+</table>
+
+<h3>5.7 网关、审计、可观测、部署</h3>
+<table>
+<tr><th>组件</th><th>版本</th><th>角色</th></tr>
+<tr><td>APISIX</td><td>3.10.0</td><td>API 网关 / 限流 / 鉴权</td></tr>
+<tr><td>Nginx</td><td>1.26.2</td><td>反向代理（备选）</td></tr>
+<tr><td>Presidio Analyzer/Anonymizer</td><td>2.2.355</td><td>PII 识别与脱敏</td></tr>
+<tr><td>Loguru</td><td>0.7.2</td><td>结构化 JSON 日志</td></tr>
+<tr><td>OpenTelemetry SDK</td><td>1.27.0</td><td>Trace/Metrics/Logs</td></tr>
+<tr><td>Prometheus</td><td>2.55.0</td><td>Metrics 存储</td></tr>
+<tr><td>Grafana</td><td>11.3.0</td><td>可视化</td></tr>
+<tr><td>Arize Phoenix</td><td>5.x</td><td>LLM Trace（开源、离线友好）</td></tr>
+<tr><td>Docker / docker-compose</td><td>27.3 / 2.29</td><td>容器与编排</td></tr>
+</table>
+
+<h2>6. Java vs Python 详细对比</h2>
+
+<table>
+<tr><th>维度</th><th>Python</th><th>Java</th><th>胜方</th></tr>
+<tr><td>AI 生态</td><td>LangChain/LangGraph/LlamaIndex/vLLM 首发</td><td>LangChain4j/Spring AI 滞后 1-3 月</td><td><strong>Python ★★★</strong></td></tr>
+<tr><td>模型推理</td><td>vLLM 原生 Python，可嵌入</td><td>必须通过 HTTP/gRPC 调用 vLLM</td><td>Python</td></tr>
+<tr><td>结构化输出</td><td>instructor/Outlines/Pydantic 联动</td><td>LangChain4j 有但成熟度差距大</td><td>Python</td></tr>
+<tr><td>文档解析</td><td>unstructured/python-docx/openpyxl</td><td>Apache POI/Tika 也成熟</td><td>持平</td></tr>
+<tr><td>向量库 SDK</td><td>pgvector/Milvus/Qdrant SDK 第一时间</td><td>Java SDK 滞后</td><td>Python</td></tr>
+<tr><td>并发模型</td><td>asyncio + 多进程，GIL 限制 CPU 密集</td><td>JVM 线程池，高并发友好</td><td><strong>Java ★★★</strong></td></tr>
+<tr><td>内存/性能</td><td>较高，需 jemalloc 调优</td><td>JVM 长跑稳定</td><td>Java</td></tr>
+<tr><td>类型/工程化</td><td>Pydantic 2 弥补类型；pip/uv 略乱</td><td>Maven/Gradle 成熟，类型严格</td><td>Java</td></tr>
+<tr><td>团队习惯</td><td>需培训</td><td>公司主栈，直接复用</td><td>Java</td></tr>
+<tr><td>离线部署</td><td>wheel 离线包成熟</td><td>jar 包天然离线，但 PyTorch 仍需 Python</td><td>Python（含模型时）</td></tr>
+<tr><td>可观测</td><td>OTel 完善 + Phoenix LLM Trace</td><td>OTel Java agent 完善，LLM trace 弱</td><td>Python</td></tr>
+<tr><td>社区活跃度</td><td>LLM PR/release 极高频</td><td>约为 Python 1/5</td><td><strong>Python ★★★</strong></td></tr>
+</table>
+
+<div class="tip">
+<strong>推荐结论</strong>：核心 AI 服务用 <strong>Python</strong>，业务接入层/管理后台保留 <strong>Java</strong>，通过 HTTP/gRPC 解耦。
+<ul>
+<li><strong>AI 服务（Python）</strong>：指标推导、RAG 检索、业务域分类、Agent 编排</li>
+<li><strong>业务接入层（Java）</strong>：用户管理、权限、租户、审计查询、报表导出、ERP/数仓对接</li>
+<li><strong>解耦</strong>：Python 服务暴露 OpenAPI；Java 通过 OpenFeign/WebClient 调用</li>
+</ul>
+</div>
+
+<h2>7. PG 向量库适配评估</h2>
+
+<table>
+<tr><th>指标</th><th>当前值</th><th>评估</th></tr>
+<tr><td>文档总数</td><td>&lt; 1000（Excel + Word）</td><td>小</td></tr>
+<tr><td>字段总数</td><td>顶多几万设计字段</td><td>小</td></tr>
+<tr><td>预估 chunk 数</td><td>&lt; 5 万</td><td>小</td></tr>
+<tr><td>向量维度</td><td>bge-m3 = 1024</td><td>标准</td></tr>
+<tr><td>总向量空间</td><td>5 万 × 1024 × 4B ≈ <strong>200MB</strong></td><td>小</td></tr>
+<tr><td>检索并发 QPS</td><td>100</td><td>中</td></tr>
+</table>
+
+<table>
+<tr><th>索引类型</th><th>召回率 @ 10w 向量</th><th>QPS（单机 8 核）</th></tr>
+<tr><td>暴力</td><td>100%</td><td>&lt; 10</td></tr>
+<tr><td>IVFFlat</td><td>95%</td><td>~200</td></tr>
+<tr><td><strong>HNSW（推荐）</strong></td><td><strong>99%</strong></td><td><strong>~1200</strong></td></tr>
+</table>
+
+<div class="tip">
+<strong>结论</strong>：pgvector HNSW 在 5 万向量规模下，单机 QPS 远超 100，<strong>满足要求且无需更换</strong>。当向量数 &gt; 500 万 或 多租户隔离时再考虑 Milvus / Qdrant。
+</div>
+
+<h4>推荐建表 SQL</h4>
+<pre><code>CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE kb_chunks (
+  id BIGSERIAL PRIMARY KEY,
+  doc_id VARCHAR(64) NOT NULL,
+  domain VARCHAR(64),
+  content TEXT NOT NULL,
+  embedding vector(1024) NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_kb_chunks_embedding_hnsw
+  ON kb_chunks USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);
+
+CREATE INDEX idx_kb_chunks_domain ON kb_chunks(domain);
+CREATE INDEX idx_kb_chunks_content_fts
+  ON kb_chunks USING gin(to_tsvector('jiebacfg', content));</code></pre>
+
+<h2>8. 最低环境配置（三阶段）</h2>
+
+<div class="figure-wrap">
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" width="780">
+  <defs>
+    <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="800" height="240" fill="#f8fafc"/>
+  <text x="400" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e3a8a">三阶段部署路线</text>
+
+  <rect x="30" y="50" width="220" height="150" fill="#dbeafe" stroke="#1e40af" rx="8"/>
+  <text x="140" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">阶段 1：CPU 验证</text>
+  <text x="140" y="100" text-anchor="middle" font-size="11">0~2 周</text>
+  <text x="140" y="124" text-anchor="middle" font-size="10">• llama.cpp + GGUF Q4</text>
+  <text x="140" y="142" text-anchor="middle" font-size="10">• 32C / 64G 虚机即可</text>
+  <text x="140" y="160" text-anchor="middle" font-size="10">• 跑通功能链路</text>
+  <text x="140" y="178" text-anchor="middle" font-size="10" fill="#dc2626">• 不追性能</text>
+
+  <rect x="290" y="50" width="220" height="150" fill="#fef3c7" stroke="#b45309" rx="8"/>
+  <text x="400" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#92400e">阶段 2：API 验证</text>
+  <text x="400" y="100" text-anchor="middle" font-size="11">2~6 周</text>
+  <text x="400" y="124" text-anchor="middle" font-size="10">• 临时联网白名单</text>
+  <text x="400" y="142" text-anchor="middle" font-size="10">• 阿里百炼 / 火山方舟</text>
+  <text x="400" y="160" text-anchor="middle" font-size="10">• 5 个候选模型对比</text>
+  <text x="400" y="178" text-anchor="middle" font-size="10" fill="#dc2626">• 准/快/便宜三维评估</text>
+
+  <rect x="550" y="50" width="220" height="150" fill="#dcfce7" stroke="#15803d" rx="8"/>
+  <text x="660" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#14532d">阶段 3：GPU 生产</text>
+  <text x="660" y="100" text-anchor="middle" font-size="11">6 周后</text>
+  <text x="660" y="124" text-anchor="middle" font-size="10">• vLLM 32B-AWQ</text>
+  <text x="660" y="142" text-anchor="middle" font-size="10">• 1×A100 40G / L20 48G</text>
+  <text x="660" y="160" text-anchor="middle" font-size="10">• guided_json 上线</text>
+  <text x="660" y="178" text-anchor="middle" font-size="10" fill="#dc2626">• SLO P95 ≤ 5s</text>
+
+  <line x1="250" y1="125" x2="290" y2="125" stroke="#1e40af" stroke-width="2" marker-end="url(#arr4)"/>
+  <line x1="510" y1="125" x2="550" y2="125" stroke="#1e40af" stroke-width="2" marker-end="url(#arr4)"/>
+</svg>
+<div class="figcap">图 8-1 三阶段部署路线</div>
+</div>
+
+<h3>8.1 阶段 1：CPU 验证期最低配置</h3>
+<table>
+<tr><th>服务</th><th>CPU</th><th>内存</th><th>磁盘</th><th>备注</th></tr>
+<tr><td>FastAPI + LangGraph 应用</td><td>4 核</td><td>8 GB</td><td>50 GB</td><td>Python 业务逻辑</td></tr>
+<tr><td>PostgreSQL + pgvector</td><td>2 核</td><td>4 GB</td><td>100 GB SSD</td><td>业务 + 向量</td></tr>
+<tr><td>Redis</td><td>1 核</td><td>2 GB</td><td>10 GB</td><td>Celery + 缓存</td></tr>
+<tr><td>Celery Worker × 2</td><td>2 核</td><td>4 GB</td><td>10 GB</td><td>异步推导</td></tr>
+<tr><td>llama.cpp 7B Q4</td><td>8 核</td><td>8 GB</td><td>20 GB</td><td>3-8 token/s（够功能验证）</td></tr>
+<tr><td>llama.cpp 32B Q4（可选）</td><td>16 核</td><td>24 GB</td><td>40 GB</td><td>0.5-1.5 token/s（慢但可跑）</td></tr>
+<tr><td>bge-m3 + reranker (CPU)</td><td>4 核</td><td>4 GB</td><td>6 GB</td><td>ONNX Runtime 加速</td></tr>
+<tr><td>Prometheus + Grafana</td><td>2 核</td><td>4 GB</td><td>50 GB</td><td>监控</td></tr>
+<tr><td><strong>合计（最小）</strong></td><td><strong>24 核</strong></td><td><strong>40 GB</strong></td><td><strong>300 GB</strong></td><td><strong>单台 32C/64G 虚机即可</strong></td></tr>
+</table>
+
+<h3>8.2 阶段 2：API 验证期</h3>
+<table>
+<tr><th>项</th><th>配置</th><th>备注</th></tr>
+<tr><td>应用 / 数据库 / Redis</td><td>同阶段 1</td><td>不变</td></tr>
+<tr><td>模型 API</td><td>阿里百炼 / 火山方舟 / DeepSeek API</td><td>临时联网白名单</td></tr>
+<tr><td>Token 预算</td><td>50~100 元/天 × 4 周 ≈ 2000~4000 元</td><td>A/B 跑模型对比</td></tr>
+<tr><td>配套</td><td>Phoenix LLM Trace</td><td>记录每次调用便于回归</td></tr>
+</table>
+
+<p><strong>建议跑的 5 个候选模型</strong>：</p>
+<table>
+<tr><th>模型</th><th>上下文</th><th>单价（元/百万 token）</th><th>用途</th></tr>
+<tr><td>Qwen2.5-7B-Instruct</td><td>32K</td><td>~0.5</td><td>分流基线</td></tr>
+<tr><td>Qwen2.5-14B-Instruct</td><td>32K</td><td>~2</td><td>中等参数对照</td></tr>
+<tr><td><strong>Qwen2.5-32B-Instruct</strong></td><td>32K</td><td>~4</td><td><strong>推荐主力</strong></td></tr>
+<tr><td>Qwen2.5-72B-Instruct</td><td>32K</td><td>~8</td><td>上限对照</td></tr>
+<tr><td>DeepSeek-V2.5</td><td>64K</td><td>~2</td><td>长上下文对照</td></tr>
+</table>
+
+<h3>8.3 阶段 3：GPU 生产期推荐配置</h3>
+<table>
+<tr><th>项</th><th>规格</th></tr>
+<tr><td>CPU</td><td>2 × Intel Xeon Gold 6338（32 核 / 64 线程）</td></tr>
+<tr><td>内存</td><td>256 GB DDR4 ECC</td></tr>
+<tr><td>GPU</td><td>1 × A100 40GB <strong>或</strong> 1 × L20 48GB（性价比高）</td></tr>
+<tr><td>系统盘</td><td>480 GB NVMe SSD</td></tr>
+<tr><td>数据盘</td><td>2 TB NVMe SSD（模型 + 向量库）</td></tr>
+<tr><td>网络</td><td>双口万兆</td></tr>
+<tr><td>操作系统</td><td>Ubuntu 22.04 LTS / CentOS Stream 9</td></tr>
+<tr><td>CUDA</td><td>12.4 · Driver 550.x</td></tr>
+</table>
+
+<h3>8.4 离线安装包清单</h3>
+<table>
+<tr><th>类型</th><th>内容</th><th>体积估算</th><th>来源</th></tr>
+<tr><td>Docker 镜像</td><td>postgres / redis / vllm-openai / apisix / grafana / prometheus / phoenix</td><td>~15 GB</td><td>联网机 <code>docker save</code></td></tr>
+<tr><td>Python wheel</td><td>全 requirements.txt</td><td>~3 GB</td><td><code>pip download -d ./wheels --platform manylinux2014_x86_64</code></td></tr>
+<tr><td>系统包</td><td>gcc / postgresql-client / libgomp</td><td>~200 MB</td><td>apt/yum 离线源</td></tr>
+<tr><td>模型权重</td><td>Qwen2.5-7B GGUF Q4、32B-AWQ、bge-m3、bge-reranker-v2-m3</td><td>~50 GB</td><td>HuggingFace / ModelScope</td></tr>
+<tr><td><strong>合计</strong></td><td></td><td><strong>~70 GB</strong></td><td>1 块 128GB U 盘可拷入</td></tr>
+</table>
+
+<h3>8.5 端口规划</h3>
+<table>
+<tr><th>服务</th><th>端口</th><th>说明</th></tr>
+<tr><td>API 网关</td><td>8080</td><td>对外入口</td></tr>
+<tr><td>FastAPI</td><td>8000~8007</td><td>多 worker</td></tr>
+<tr><td>PostgreSQL</td><td>5432</td><td>仅内网</td></tr>
+<tr><td>Redis</td><td>6379</td><td>仅内网</td></tr>
+<tr><td>vLLM</td><td>8001</td><td>OpenAI 兼容</td></tr>
+<tr><td>Prometheus</td><td>9090</td><td>监控</td></tr>
+<tr><td>Grafana</td><td>3000</td><td>可视化</td></tr>
+<tr><td>Phoenix</td><td>6006</td><td>LLM Trace</td></tr>
+<tr><td>Flower</td><td>5555</td><td>Celery 监控</td></tr>
+</table>
+
+<h2>9. requirements.txt 完整版</h2>
+<pre><code># ============ Core Web ============
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+gunicorn==23.0.0
+pydantic==2.9.2
+pydantic-settings==2.6.1
+httpx==0.27.2
+python-multipart==0.0.17
+
+# ============ LangChain Ecosystem (1.0+) ============
+langchain==1.0.5
+langchain-core==1.0.5
+langchain-community==1.0.3
+langchain-openai==1.0.2
+langgraph==1.0.3
+langgraph-checkpoint==1.0.5
+langsmith==0.3.1
+
+# ============ Structured Output ============
+instructor==1.6.4
+outlines==0.1.7
+tiktoken==0.8.0
+
+# ============ LLM Inference (offline) ============
+llama-cpp-python==0.3.1            # CPU 阶段
+vllm==0.6.3.post1                  # GPU 阶段（GPU 机部署）
+
+# ============ Embedding / Rerank ============
+FlagEmbedding==1.3.4
+sentence-transformers==3.3.1
+fastembed==0.4.2                   # ONNX 加速（CPU 友好）
+transformers==4.46.2
+torch==2.4.1
+
+# ============ Document Parsing ============
+unstructured[xlsx,docx]==0.15.13
+python-docx==1.1.2
+openpyxl==3.1.5
+pandas==2.2.3
+pypdf==5.1.0
+
+# ============ Database ============
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+psycopg[binary]==3.2.3
+pgvector==0.3.6
+alembic==1.13.3
+
+# ============ Cache & Queue ============
+redis==5.2.0
+celery[redis]==5.4.0
+flower==2.0.1
+apscheduler==3.10.4
+
+# ============ Audit & Security ============
+presidio-analyzer==2.2.355
+presidio-anonymizer==2.2.355
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ============ Observability ============
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-instrumentation-fastapi==0.48b0
+opentelemetry-instrumentation-sqlalchemy==0.48b0
+opentelemetry-exporter-otlp==1.27.0
+arize-phoenix==5.10.0
+loguru==0.7.2
+prometheus-client==0.21.0
+
+# ============ Utilities ============
+tenacity==9.0.0
+orjson==3.10.11
+typer==0.13.0
+rich==13.9.4</code></pre>
+
+<h2>10. docker-compose.yml 骨架</h2>
+<pre><code>version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16.4-bookworm
+    environment:
+      POSTGRES_DB: metric_agent
+      POSTGRES_USER: ma
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/init.sql
+    ports: ["5432:5432"]
+
+  redis:
+    image: redis:7.4-bookworm
+    command: redis-server --maxmemory 12gb --maxmemory-policy allkeys-lru
+    volumes: [redis_data:/data]
+    ports: ["6379:6379"]
+
+  api:
+    image: metric-agent-api:1.0.0
+    depends_on: [postgres, redis]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ma:${PG_PASSWORD}@postgres:5432/metric_agent
+      REDIS_URL: redis://redis:6379/0
+      LLM_ROUTER_MODE: api          # 阶段 2：api / 阶段 3：vllm
+    deploy: { replicas: 4 }
+    ports: ["8000:8000"]
+
+  celery-worker:
+    image: metric-agent-api:1.0.0
+    command: celery -A app.celery_app worker -l info -c 4
+    depends_on: [postgres, redis]
+    deploy: { replicas: 2 }
+
+  vllm:
+    image: vllm/vllm-openai:v0.6.3.post1
+    runtime: nvidia
+    profiles: ["gpu"]
+    command: >
+      --model /models/Qwen2.5-32B-Instruct-AWQ
+      --quantization awq
+      --max-model-len 32768
+      --gpu-memory-utilization 0.9
+      --guided-decoding-backend xgrammar
+    volumes: [./models:/models]
+    ports: ["8001:8000"]
+
+  phoenix:
+    image: arizephoenix/phoenix:5.10
+    ports: ["6006:6006"]
+
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prom_data:/prometheus
+    ports: ["9090:9090"]
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    volumes: [grafana_data:/var/lib/grafana]
+    ports: ["3000:3000"]
+
+volumes:
+  pg_data: {}
+  redis_data: {}
+  prom_data: {}
+  grafana_data: {}</code></pre>
+
+<h2>11. 选型决策一页纸 &amp; 验收清单</h2>
+
+<table>
+<tr><th>关注点</th><th>当前 Dify 方案</th><th>新方案</th><th>收益</th></tr>
+<tr><td>编排</td><td>Dify 拖拽</td><td>LangGraph 1.0 状态机</td><td>可测试、可版本化、可灰度</td></tr>
+<tr><td>模型</td><td>单一 Qwen3-235B</td><td>7B+32B 分流</td><td>成本 ↓ 60%+，延迟 ↓ 40%</td></tr>
+<tr><td>大 JSON</td><td>一次塞入</td><td>5 层瘦身/切片/Map-Reduce/流式/缓存</td><td>突破上下文窗口，准确率 ↑</td></tr>
+<tr><td>向量库</td><td>pgvector（沿用）</td><td>pgvector + HNSW + 混合检索</td><td>不换轮子，仅调优</td></tr>
+<tr><td>部署</td><td>Dify SaaS</td><td>Docker Compose 离线包</td><td>内网可控</td></tr>
+<tr><td>审计/脱敏</td><td>无</td><td>Presidio + 三表审计</td><td>合规达标</td></tr>
+<tr><td>可观测</td><td>弱</td><td>OTel + Phoenix + Grafana</td><td>分钟级定位</td></tr>
+<tr><td>团队语言</td><td>业务 Java + Dify 拖拽</td><td>Java 接入 + Python AI（HTTP 解耦）</td><td>各司其职</td></tr>
+<tr><td>模型采购</td><td>/</td><td>路径 A：CPU 验证 → API 选型 → GPU 自部署</td><td>风险最低</td></tr>
+</table>
+
+<h3>验收清单</h3>
+<ul>
+<li>CPU 阶段：跑通"上传 Excel → 业务域分类 → 指标推导 → 输出 metric_system JSON"全链路</li>
+<li>API 阶段：5 个模型评测对比，输出选型报告</li>
+<li>GPU 阶段：vLLM 部署 + 32B-AWQ + guided_json，QPS 100 下 P95 ≤ 5s</li>
+<li>知识库：5 万 chunk 入库，混合召回 Recall@10 ≥ 90%</li>
+<li>大 JSON：1000 张表稳定运行，无 OOM 与 Token 超限</li>
+<li>审计：所有 LLM 调用落审计表；PII 自动脱敏</li>
+<li>可观测：Grafana 看板 + Phoenix Trace + 告警齐全</li>
+<li>离线：依赖全打包，干净虚机一键起服</li>
+</ul>
+
+<hr>
+<p class="meta center">— 文档结束 —</p>
+
+</body>
+</html>

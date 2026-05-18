@@ -1,0 +1,20 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+.env
+*.log
+.build_*/
+
+# Local/generated deliverables
+交付物/material_agent_outputs/
+交付物/material_agent_tasks/
+交付物/knowledge_bases/
+交付物/~$*
+
+# Local vendored wheels/libs are workstation-specific.
+.vendor/
