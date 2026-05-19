@@ -13,16 +13,27 @@
 - 第二阶段任务化骨架：本地 JSON 任务仓储、任务创建/执行/查询 API 与 CLI
 - 第三阶段执行准备：仓储协议、任务事件日志、文件 SHA-256 元数据、PostgreSQL 表结构草案
 - 第四阶段平台化命名：`enterprise-agent-platform` 项目名、`agent_platform` 通用底座包、Agent 注册表、后台执行器、平台级 API
+- 第五阶段平台入口：Tool/MCP/Skill、Model Gateway、知识库导入/导出/下载骨架
+- 离线部署：提供离线依赖包构建、安装、验证脚本和 systemd 模板
 
 本地样例验证：
 
 ```bash
-PYTHONPATH=.vendor:. python3 -m unittest discover -s tests -v
+make verify
 PYTHONPATH=.vendor:. python3 -m material_agent.cli list-agents
-PYTHONPATH=.vendor:. python3 -m material_agent.cli run-pilot --limit 30
-PYTHONPATH=.vendor:. python3 -m material_agent.cli run-five-step
-PYTHONPATH=.vendor:. python3 -m material_agent.cli create-pilot-task --limit 30 --created-by cli
-PYTHONPATH=.vendor:. python3 -m material_agent.cli task-events <task_id>
 ```
+
+离线部署：
+
+```bash
+make offline-bundle
+```
+
+更多文档：
+
+- `docs/enterprise_gap_assessment.md`
+- `docs/offline_deployment.md`
+- `docs/operations_runbook.md`
+- `docs/release_checklist.md`
 
 详细工程说明见 `material_agent/README.md`。

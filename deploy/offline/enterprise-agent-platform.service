@@ -1,0 +1,16 @@
+[Unit]
+Description=Enterprise Agent Platform API
+After=network.target
+
+[Service]
+Type=simple
+User=agent
+Group=agent
+WorkingDirectory=/opt/enterprise-agent-platform/app
+EnvironmentFile=/opt/enterprise-agent-platform/.env
+ExecStart=/opt/enterprise-agent-platform/venv/bin/uvicorn material_agent.app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
